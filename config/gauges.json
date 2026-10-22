@@ -1,0 +1,13 @@
+[
+  {
+    "id": "YB-106",
+    "name": "测试压力表",
+    "area": "A",
+    "pos": "摄像头测试点",
+    "type": "压力表",
+    "range": 0.016,
+    "acc": 2.5,
+    "status": "active",
+    "installDate": "未填写"
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "port": 8787,
+  "source": "data/comparison/整点数据.xlsx",
+  "seedGauges": "config/gauges.json",
+  "watchIntervalMs": 2000,
+  "allowedGaugeIds": [
+    "YB-106"
+  ]
+}

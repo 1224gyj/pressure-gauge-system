@@ -1,0 +1,23 @@
+{
+  "meter": {
+    "id": "YB-106",
+    "name": "测试压力表",
+    "rangeKpa": 16,
+    "unit": "MPa",
+    "accuracyClass": 2.5
+  },
+  "readingsFile": "data/live/readings.json",
+  "statusFile": "data/live/status.json",
+  "comparisonsFile": "data/live/comparisons.json",
+  "transmitterConfigFile": "config/transmitter.json",
+  "comparisonMode": "time",
+  "historyLimit": 1000,
+  "watchIntervalMs": 1000,
+  "staleAfterSeconds": 150,
+  "warnCoef": 0.5,
+  "alarmCoef": 1,
+  "researchIntervalSeconds": 60,
+  "pairingToleranceSeconds": 10,
+  "recognitionMode": "transmitter",
+  "frameCacheSeconds": 120
+}

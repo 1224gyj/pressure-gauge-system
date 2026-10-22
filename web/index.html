@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="57FGnveqEVRpEumOxeZwXu">
+<head data-page-node-id="mQ1bGzk6Asgs9GA6AsFnM3">
+<meta charset="UTF-8" data-page-node-id="WFIlmpZ2d4fFxxPbAB1SJM">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="gnj8d1jJD6EE9Q5FLarPF7">
+<title>压力表数据比对与判定系统</title>
+<link rel="stylesheet" href="css/style.css?v=20261014f" data-page-node-id="WDUkoRgvY6w2qpQiefVtpy">
+<link rel="stylesheet" href="css/live.css?v=20261020trigger">
+<!-- xlsx 解析库放在 body 末尾加载，用的是随包本地副本 js/xlsx.full.min.js —— 断网也能导入 .xlsx -->
+<!-- 样式/脚本带 ?v= 版本号：改完代码把版本号往上提一位，可强制浏览器重新加载，避免看到旧界面 -->
+</head>
+<body data-page-node-id="SnzO58NOCXlgNTd2SJOJoQ">
+<section id="liveMonitor" hidden aria-label="单表实时监测"></section>
+
+<!-- ============ 登录页 ============ -->
+<div id="loginView" class="login-wrap" data-page-node-id="AeV91K0HhPlyYNdrbj46Hg">
+  <div class="login-brand" data-page-node-id="TtdYY7gTirdU6u8HHYkhWH">
+    <div class="brand-deco deco-a" data-page-node-id="NJ8GrqKHhSKALfBjkiUSPH"></div>
+    <div class="brand-deco deco-b" data-page-node-id="7iTRzmQYoPyEBci2LYWSBK"></div>
+    <div class="brand-inner" data-page-node-id="ZNmflTCUv8Sem86O2IqchM">
+      <div class="brand-logo" data-page-node-id="59AcLl9a4yYrQcC2o5xhpA">
+        <svg viewBox="0 0 48 48" width="44" height="44" fill="none" data-page-node-id="NvFNG6rfBpJp6SIBJDGXeu">
+          <circle cx="24" cy="24" r="20" stroke="#7FB3FF" stroke-width="2.5" data-page-node-id="Xls7MMEfLIjxUDQUcIyAlO"/>
+          <circle cx="24" cy="24" r="13.5" stroke="#3B82F6" stroke-width="2" stroke-dasharray="3 4" data-page-node-id="ipfphVmt1aaeYWH4R5zrDL"/>
+          <line x1="24" y1="24" x2="32.5" y2="15.5" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" data-page-node-id="KX7SxG9tUIn3gwWTsGlvXc"/>
+          <circle cx="24" cy="24" r="3" fill="#FFFFFF" data-page-node-id="O9Eb5icLQTGbcYBSOqMbjh"/>
+        </svg>
+        <div data-page-node-id="l008pNDeteHSJ2teR0gDN7">
+          <div class="brand-name" data-page-node-id="BHdWtdI97cGXjbUcyRBa7g">压力表数据比对与判定系统</div>
+          <div class="brand-sub" data-page-node-id="UMuurIg3uxlu7P7VGnVXv6">Pressure Gauge Monitoring &amp; Verification Platform</div>
+        </div>
+      </div>
+      <p class="brand-desc" data-page-node-id="N67AiS9PuLsppH08KwlLf9">
+        面向泵站与工艺装置的压力表在线比对平台。按整点自动对齐变送器读数与图像识别读数，
+        依据 JJG 52 检定规程的引用误差口径完成三级状态判定，让每一块超差表
+        在恶化早期就被看见。
+      </p>
+      <ul class="brand-feats" data-page-node-id="3qc8w1vkuwAPD0pDtHDCjw">
+        <li data-page-node-id="cLwtaoydyBJjhFyfNiYJvK"><i data-page-node-id="Cap5DCZKn8rfuV8igxBzwu"></i>整点自动比对 · 识别读数与变送器逐点求差</li>
+        <li data-page-node-id="i0HQFGe0Hqvy1suE4bK1vQ"><i data-page-node-id="Rjamn5ZeHzmxZXX7IHdhYk"></i>安全 / 预警 / 报警三级判定 · 阈值绑定精度等级</li>
+        <li data-page-node-id="KI4PtkQLczbT5dQYsPStLu"><i data-page-node-id="CViGgAEOOsHEZZNuGBUT7m"></i>异常劣化轨迹追踪 · 连续异常整点计数</li>
+        <li data-page-node-id="2Mi7Y4IGXpdPt3qIsgMfHQ"><i data-page-node-id="FsJYF5Bqai0Ut0X0O7Rjya"></i>删除审批流 · 操作全量审计留痕</li>
+      </ul>
+      <div class="brand-stats" data-page-node-id="qAPz5mf1hJzMMMbbbAjsne">
+        <div data-page-node-id="GUGGzfN4cuS5FlFJ2KQE3A"><b data-page-node-id="3AolG6fRfat9hU0KbETXUO">8</b><span data-page-node-id="hFuR5fcFHqHZAl1AKEwF0Z">整点/班</span></div>
+        <div data-page-node-id="yFP5ODVuxpQT1ZvHRMahE4"><b data-page-node-id="OpaJkYGtWUE5e45uZa5sxI">±1.6%</b><span data-page-node-id="ih2PJDWVRPQVq2wqqfioBQ">报警线(FS)</span></div>
+        <div data-page-node-id="QK22y3OkJL8SF9y1z0XVSs"><b data-page-node-id="zOqhKffYldcvirBvrMLyPC">3 级</b><span data-page-node-id="zVdZuHnLHFJ0kXhSNe7eT9">状态判定</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-panel" data-page-node-id="jqVzQw4gOFm0kB8Mz9ce2A">
+    <div class="login-card" data-page-node-id="uWSvyNT5l1tXMrVvmQmDdr">
+      <h1 data-page-node-id="Xg8x5tucqJYbe1YcQcVV47">欢迎登录</h1>
+      <p class="login-tip" data-page-node-id="cJThwvHvg2BzML8JXqbwAs">请使用运维账号登录系统，不同角色可见范围不同</p>
+      <label class="fld" data-page-node-id="KyeuGkuyyfTRQdKdgCEaAE">
+        <span data-page-node-id="iu88bmmzXDBW5KDKdIxr3I">账号</span>
+        <input id="loginAcc" class="input" type="text" placeholder="请输入账号，如 admin" autocomplete="off" data-page-node-id="U5tjx8czhLwDeO5lZ9LOeX">
+      </label>
+      <label class="fld" data-page-node-id="4wFtXR4AXsxu2Av2BB8c0M">
+        <span data-page-node-id="QWsky1OLYrHccO4nRjIrX8">密码</span>
+        <input id="loginPwd" class="input" type="password" placeholder="演示环境任意密码可登录" data-page-node-id="eapDC9cLuwBPFU8EQVJeCr">
+      </label>
+      <div id="loginErr" class="login-err" data-page-node-id="nRcgGaCxkSmeV1R4c1n4YO"></div>
+      <button class="btn btn-primary btn-block" data-act="login" data-page-node-id="Oo5Mdf5sFVbUgNcmZtKtFo">登 录</button>
+      <div class="demo-accounts" data-page-node-id="F79kfn2CcPeqbDEr28z0m6">
+        <div class="demo-title" data-page-node-id="4cdRCyODVyQDYzdxVOTcOz">演示账号（点击填入，密码任意）</div>
+        <div class="demo-chips" data-page-node-id="Tk8sjT4CZoaEQo6DLpQwNq">
+          <button class="demo-chip" data-acc="admin" data-page-node-id="ACMR3ha3knGPPrxKXK4x4Y"><b data-page-node-id="N1VjAEEvFFP2MbT49VUsKC">admin</b><span data-page-node-id="OC3IHkXBJxCUHPPPb3q2ME">管理员 · 全部区域</span></button>
+          <button class="demo-chip" data-acc="zhangwei" data-page-node-id="DFthTVVCHKZdSwd3vC1EfI"><b data-page-node-id="O0uQe2fIXd80kFWddXR7mB">zhangwei</b><span data-page-node-id="sKOpCCRxBB9FS2Uxg44fhn">张伟 · 一号泵站</span></button>
+          <button class="demo-chip" data-acc="liuyang" data-page-node-id="GPZYHHtu2Toc5My5BsSIbd"><b data-page-node-id="tyqSqVKaC1ZcisPCDCHrEy">liuyang</b><span data-page-node-id="672zJKdZkiD6dMNY4CwKgW">刘洋 · 二号泵站</span></button>
+        </div>
+      </div>
+    </div>
+    <div class="login-foot" data-page-node-id="tCmvUgRmkOQYmEFyzdz7Ys">压力表数据比对与判定系统 V2.0 · 演示环境</div>
+  </div>
+</div>
+
+<!-- ============ 主框架 ============ -->
+<div id="appView" class="app" hidden data-page-node-id="EXDUwRYFqTJAVYgosq7E5A">
+  <aside id="sidebar" class="sidebar" data-page-node-id="jcHaNIMyHh4XrKSE2OEfCJ">
+    <div class="side-brand" data-page-node-id="BehIqZvuACSVhIj4lk6SoR">
+      <svg viewBox="0 0 48 48" width="30" height="30" fill="none" data-page-node-id="yRgXE0KkMYeshGUO2ji4m4">
+        <circle cx="24" cy="24" r="20" stroke="#7FB3FF" stroke-width="3" data-page-node-id="XpNOrOmPxlfXh1KCxqyddb"/>
+        <line x1="24" y1="24" x2="32.5" y2="15.5" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" data-page-node-id="A0hJXHtwJBqTTFWxm5TcXc"/>
+        <circle cx="24" cy="24" r="3.5" fill="#FFFFFF" data-page-node-id="zoQPgDBafq3SlDyZjTkmqd"/>
+      </svg>
+      <span class="side-brand-name" data-page-node-id="g0RajnBi1Kr17oSEJXnMWt">压力表判定平台</span>
+    </div>
+    <nav id="mainNav" class="side-nav" data-page-node-id="uxQiaECetkRFr6IXBzjRNb"></nav>
+    <div class="side-user" id="sideUser" data-page-node-id="uwIQ4aVL0GOcULSDdhJRDf"></div>
+  </aside>
+  <div class="side-mask" data-act="closeNav" data-page-node-id="y8hw9fwJwcsbSb7VwXD0B8"></div>
+
+  <div class="main-col" data-page-node-id="5wKnOXQZI9Fdrn6FzAW3jz">
+    <header class="topbar" data-page-node-id="yzRuXIcbTuOBq6IfikqDCY">
+      <button class="icon-btn nav-toggle" data-act="openNav" title="菜单" data-page-node-id="M24P9VNWd4kwgyFnNam5sd">
+        <svg width="20" height="20" viewBox="0 0 20 20" data-page-node-id="ut9XGeoGIcwSjRAUps5P26"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="rb1oigPIwWMwuquo4Rq7Od"/></svg>
+      </button>
+      <div class="topbar-title" data-page-node-id="R6wVpldWwOBiTl6TAZDjHN">
+        <h2 id="pageTitle" data-page-node-id="SD7i80NM9vunaWOFPKPJT6">判定看板</h2>
+        <span id="pageCrumb" class="crumb" data-page-node-id="3guHGqrLbXFz1GUkIpCpUQ"></span>
+      </div>
+      <div class="topbar-right" id="topbarRight" data-page-node-id="3lVOMAZw4bO6n5dC9wCB8s"></div>
+    </header>
+    <main id="main" class="main" data-page-node-id="ZqHqACgqp7NDh6E051F4hC"></main>
+  </div>
+</div>
+
+<div id="modalRoot" data-page-node-id="kIMySeBJc2WJqprTmIXmOZ"></div>
+<div id="toastRoot" class="toast-root" data-page-node-id="byapPWJDBWQwlJAN0Yilig"></div>
+
+<!-- xlsx 解析：优先本地副本（断网可用）；万一本地文件缺失，才回退到 CDN -->
+<script src="js/xlsx.full.min.js?v=20261014f"></script>
+<script>
+  if (typeof XLSX === "undefined") {
+    var _xlsxCdn = document.createElement("script");
+    _xlsxCdn.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+    document.head.appendChild(_xlsxCdn);
+  }
+</script>
+
+<script src="js/data.js?v=20261015c"></script>
+<script src="js/core.js?v=20261020mpa"></script>
+<script src="js/views.js?v=20261014f"></script>
+<script src="js/views2.js?v=20261014f"></script>
+<script src="js/sync.js?v=20261015c"></script>
+<script src="js/research.js?v=20261020trigger"></script>
+<script src="js/live.js?v=20261020trigger"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+__pycache__/
+*.pyc
+.vscode/*.log
+tests/*.log
+data/captures/
+data/debug/
+data/readings/
+data/live/
+runtime/
+archives/
+config/python_path.txt
+~$*
+config/vendor-credentials.local.json
+config/transmitter.before-vendor.local.json
+data/transmitter/vendor-http.json
+data/settings-backups/
+data/research/
+
+# 不上传本机密码和实际配置
+/config/pipeline.json
+/config/transmitter.json
+/config/vendor-credentials.local.json
+/config/transmitter-read.key
+/config/transmitter.before-vendor.local.json
+/config/python_path.txt
+/.vscode/
+
+# 不上传采集数据、运行环境和临时文件
+/data/
+/runtime/
+/output/
+/tmp/
