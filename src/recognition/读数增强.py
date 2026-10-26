@@ -409,7 +409,7 @@ def _predict(model, src):
 
 
 # ---------------------------------------------------------------- 第一步：备料
-def _prepare(mk, mp, src):
+def _prepare(mk, mp, src, allow_legacy=True):
     """一帧 → 测量素材（含**本帧自己**检出的圆心/半径）。
 
     src 可以是图片路径，也可以是 BGR numpy 数组（连拍时直接用内存里的帧，不必落盘）。
@@ -439,9 +439,10 @@ def _prepare(mk, mp, src):
     prep = {"img": img, "gray": gray, "H": H, "W": W, "k": k, "p2": p2,
             "tip_conf": tip_conf, "raw_d": raw_d, "delegate": False}
 
-    # 原工具的假设成立时（针够长 → 说明是大图、表盘占满，正是它调参的那个域），
-    # 标记 delegate，行为与从前完全一致 —— 保证旧照片集上的结果不变。
-    if raw_d >= RD.FALLBACK_D:
+    # 高清视频中 raw_d>=700 只说明像素更多，不能证明轴心正确或已经裁好。
+    # 摄像头调用显式关闭旧大图路径，始终校正圆心并裁切；保留已有离线
+    # 照片的默认行为，避免靠宽高比猜测图片来源或改变旧标定集的输出。
+    if allow_legacy and raw_d >= RD.FALLBACK_D:
         prep["delegate"] = True
         return prep
 
@@ -653,12 +654,12 @@ def _draw(prep, m, center, Rad, label, debug_dir, stem):
     imwrite_zh(Path(debug_dir) / ("%s.jpg" % stem), vis)
 
 
-def read_one(mk, mp, image_path, debug_dir=None):
+def read_one(mk, mp, image_path, debug_dir=None, allow_legacy=True):
     """单帧：照片 → 读数(MPa)。圆心用**本帧自己**检出的那个。"""
     src = image_path if isinstance(image_path, np.ndarray) else Path(image_path)
     label = "<内存帧>" if isinstance(src, np.ndarray) else str(src)
     debug_dir = Path(debug_dir) if debug_dir else None
-    prep = _prepare(mk, mp, src)
+    prep = _prepare(mk, mp, src, allow_legacy=allow_legacy)
     if "err" in prep:
         return {"ok": False, "error": prep["err"]}
     if prep.get("delegate"):
@@ -692,7 +693,7 @@ def read_one(mk, mp, image_path, debug_dir=None):
     return _result(m, center, Rad, ctag, label)
 
 
-def read_one_multi(mk, mp, srcs, debug_dir=None, min_frames=2, lock_angle=True):
+def read_one_multi(mk, mp, srcs, debug_dir=None, min_frames=2, lock_angle=True, allow_legacy=True):
     """多帧锁定圆心：N 帧 → 一个读数(MPa)。**表静止时用**。
 
     原理：读数 = f(圆心, 针角, 刻度跨度)，这三样每帧都被单独检一次，各自都会抖：
@@ -716,7 +717,7 @@ def read_one_multi(mk, mp, srcs, debug_dir=None, min_frames=2, lock_angle=True):
     label = "<内存连拍>" if srcs and isinstance(srcs[0], np.ndarray) else (str(srcs[0]) if srcs else "")
     preps, errs = [], []
     for source_index, s in enumerate(srcs):
-        p = _prepare(mk, mp, s)
+        p = _prepare(mk, mp, s, allow_legacy=allow_legacy)
         if "err" in p:
             errs.append(p["err"])
             continue
@@ -728,7 +729,7 @@ def read_one_multi(mk, mp, srcs, debug_dir=None, min_frames=2, lock_angle=True):
 
     if any(p.get("delegate") for p in preps):
         # 大图/混合尺寸帧各自测量，仍保留多帧中位数、离散度和真实代表帧序号。
-        singles = [(p["source_index"], read_one(mk, mp, srcs[p["source_index"]]))
+        singles = [(p["source_index"], read_one(mk, mp, srcs[p["source_index"]], allow_legacy=allow_legacy))
                    for p in preps]
         singles = [(i, r) for i, r in singles if r.get("ok") and r.get("value") is not None]
         if not singles:
@@ -746,7 +747,7 @@ def read_one_multi(mk, mp, srcs, debug_dir=None, min_frames=2, lock_angle=True):
         result["note"] = ((result.get("note") + "；") if result.get("note") else "") + \
                          "%d帧独立测量，中位读数，极差 %.2f MPa" % (len(singles), spread)
         if debug_dir:
-            read_one(mk, mp, srcs[best_index], debug_dir=debug_dir)
+            read_one(mk, mp, srcs[best_index], debug_dir=debug_dir, allow_legacy=allow_legacy)
         return result
 
     if preps and any(p["gray"].shape != preps[0]["gray"].shape for p in preps):

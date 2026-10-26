@@ -27,6 +27,15 @@ def pending_reports(records, done, boundary):
                    and int(r['vendorRecvAtUs'])/1e6 > boundary), key=lambda r: int(r['vendorRecvAtUs']))
 
 
+def stream_needs_reconnect(stream, max_frame_age=15):
+    if stream is None or not stream.alive:
+        return True
+    if not hasattr(stream, 'history_status'):
+        return False
+    newest = stream.history_status().get('newestFrameAt')
+    return newest is None or time.time()-newest > max_frame_age
+
+
 def run_triggered(pipe, rc, gr, mk, mp, args, cfg, uri, debug_dir):
     root = pipe.PROJECT_ROOT
     live = LiveStore(root, cfg.get('live', {}).get('config', 'config/live.json'))
@@ -55,6 +64,7 @@ def run_triggered(pipe, rc, gr, mk, mp, args, cfg, uri, debug_dir):
             raise RuntimeError('摄像头未取得画面，无法建立历史缓存')
         live.set_status('running', '正在缓存画面，等待新的变送器报文')
         last_heartbeat = 0
+        reconnect_at = 0
         while True:
             try:
                 stop = root/'data/research/stop-capture.flag'
@@ -62,6 +72,35 @@ def run_triggered(pipe, rc, gr, mk, mp, args, cfg, uri, debug_dir):
                     stop.unlink()
                     break
                 control = read_json(control_file, {})
+                # FFmpeg can remain alive after a camera/network interruption
+                # without producing JPEGs. Process liveness alone is insufficient.
+                if stream_needs_reconnect(stream):
+                    if time.monotonic() < reconnect_at:
+                        time.sleep(.3)
+                        continue
+                    live.set_status('capture_error', '摄像头画面停止更新，正在自动重连；等待新画面建立缓存')
+                    print('摄像头画面停止更新，正在自动重连', flush=True)
+                    if stream:
+                        stream.stop()
+                        if stream in rc._STREAMS:
+                            rc._STREAMS.remove(stream)
+                    stream = None
+                    try:
+                        stream = rc.RtspFrameStream(uri, fps).enable_history(seconds, max_bytes).start()
+                        rc._STREAMS.append(stream)
+                        if stream.grab(timeout=10)[0] is None:
+                            raise RuntimeError('重连后未收到画面')
+                        print('摄像头取流已恢复，继续缓存画面', flush=True)
+                        last_heartbeat = 0
+                    except Exception:
+                        if stream:
+                            stream.stop()
+                            if stream in rc._STREAMS:
+                                rc._STREAMS.remove(stream)
+                        stream = None
+                        reconnect_at = time.monotonic()+5
+                        live.set_status('capture_error', '摄像头重连尚未取得画面，5 秒后自动重试；请检查供电和网线')
+                        continue
                 if time.monotonic()-last_heartbeat > 10:
                     live.set_status('paused' if control.get('paused') else 'running',
                                     '缓存画面中；识别已暂停' if control.get('paused') else '缓存画面中，等待新报文触发识别',
@@ -103,7 +142,7 @@ def run_triggered(pipe, rc, gr, mk, mp, args, cfg, uri, debug_dir):
                         image = output/('report_'+stamp+'.jpg')
                         image.write_bytes(jpg)
                         captured_at = dt.datetime.fromtimestamp(captured, dt.timezone.utc).isoformat(timespec='milliseconds')
-                        row = pipe.read_and_record(gr, mk, mp, image, captured_at, len(rows)+1, debug_dir)
+                        row = pipe.read_and_record(gr, mk, mp, image, captured_at, len(rows)+1, debug_dir, camera_frame=True)
                         row['triggerStatus'] = 'recognized' if row['value'] is not None else 'recognition_failed'
                         row['frameTimeDiffSeconds'] = abs(captured-target)
                     row['transmitterStamp'] = stamp
@@ -126,8 +165,6 @@ def run_triggered(pipe, rc, gr, mk, mp, args, cfg, uri, debug_dir):
                         image.unlink(missing_ok=True)
                     if args.count and len(rows) >= args.count:
                         return 0
-                if not stream.alive:
-                    raise RuntimeError('摄像头缓存取流中断，请重新启动采集')
                 time.sleep(.3)
             except (RetryReadError, PermissionError, json.JSONDecodeError) as exc:
                 try:

@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'src/pipeline'))
-from triggered_capture import run_triggered, pending_reports
+from triggered_capture import run_triggered, pending_reports, stream_needs_reconnect
 import triggered_capture
 from live_store import LiveStore
 
@@ -27,6 +27,13 @@ assert stream.historical_frame(240, 1) is None
 tiny = camera.RtspFrameStream('unused').enable_history(120, 2)
 tiny._publish(b'aa'); tiny._publish(b'bb')
 assert tiny._history_bytes == 2 and len(tiny._history) == 1
+with patch.object(camera.time, 'time', return_value=250.):
+    stream._alive = True
+    assert stream_needs_reconnect(stream), 'live process with frozen frames must reconnect'
+with patch.object(camera.time, 'time', return_value=231.):
+    assert not stream_needs_reconnect(stream)
+stream._alive = False
+assert stream_needs_reconnect(stream) and stream_needs_reconnect(None)
 
 with tempfile.TemporaryDirectory() as temp:
     root = Path(temp)
@@ -50,7 +57,8 @@ with tempfile.TemporaryDirectory() as temp:
         def historical_frame(self,target,tolerance): return (b'jpeg',target+.2) if abs(target-int(stamps[0])/1e6)<.01 else None
         def stop(self): self.alive=False
     calls=[]
-    def recognize(gr,mk,mp,image,captured,seq,debug):
+    def recognize(gr,mk,mp,image,captured,seq,debug,camera_frame=False):
+        assert camera_frame, 'triggered reports must use the camera recognition route'
         calls.append(str(image))
         return {'seq':seq,'t_cap':captured,'name':image.name,'value':8.7,'conf':.9,'raw_d':10,'source':'test','status':'ok','cost':0}
     pipe=types.SimpleNamespace(PROJECT_ROOT=root,resolve=lambda name:root/name,excel_path_of=lambda *args:root/'out.xlsx',read_and_record=recognize,merge_rows=lambda old,new,*args:new,write_excel=lambda *args:None)
@@ -77,7 +85,40 @@ with tempfile.TemporaryDirectory() as temp:
     row={'t_cap':reports[0]['vendorReceivedAt'],'value':8.7,'status':'ok','transmitterStamp':stamps[0]}
     store.publish(row)
     assert len(json.loads(store.readings_path.read_text())['readings'])==2
+
+    # A frozen session, one failed reconnect, then fresh video: retain the
+    # report and recognize it once after recovery, without restarting Python.
+    third = str(int(now*1e6))
+    write('data/vendor.json', {'records': reports+[{'vendorRecvAtUs':third,
+          'vendorReceivedAt':dt.datetime.fromtimestamp(now,dt.timezone.utc).isoformat()}]})
+    class RecoverStream(Stream):
+        sessions = 0
+        stopped = []
+        def __init__(self,*args):
+            RecoverStream.sessions += 1
+            self.session = RecoverStream.sessions
+            self.alive = True
+        def grab(self,**kwargs):
+            return (None,0) if self.session == 2 else (b'jpeg',time.time())
+        def history_status(self):
+            return {'newestFrameAt':time.time()-(60 if self.session == 1 else 0)}
+        def historical_frame(self,target,tolerance): return b'jpeg',target+.1
+        def stop(self):
+            self.alive = False
+            RecoverStream.stopped.append(self.session)
+    rc.RtspFrameStream = RecoverStream
+    before = len(calls)
+    import itertools
+    with patch.object(triggered_capture.time,'monotonic',side_effect=itertools.count(0,10)):
+        assert run_triggered(pipe,rc,None,None,None,types.SimpleNamespace(count=1),cfg,'unused',None) == 0
+    assert RecoverStream.sessions == 3 and RecoverStream.stopped == [1,2,3]
+    assert len(calls) == before+1
+    recovered = json.loads((root/'data/live/readings.json').read_text())['readings']
+    assert len(recovered) == 3 and recovered[-1]['transmitterStamp'] == third
+    assert recovered[-1]['triggerStatus'] == 'recognized'
+    assert not rc._STREAMS
 print('PASS: bounded history, nearest frame, stale/missing frame, one inference/report, persistent deduplication, activation boundary and cleanup')
+print('PASS: frozen video reconnects, failed reconnect retries, recovered video triggers exactly once')
 with patch.object(Path,'read_text',side_effect=[PermissionError('busy'),'{"ok":true}']):
     assert triggered_capture.read_json('unused',{}) == {'ok':True}
 print('PASS: transient file locks retry, sustained lock preserves stream and resumes triggering')

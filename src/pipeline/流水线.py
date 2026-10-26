@@ -468,10 +468,11 @@ def _save_wb(wb, out, tries=3):
 
 
 # ---------------------------------------------------------------- 读数
-def read_and_record(gr, mk, mp, img_path, t_cap, seq, debug_dir=None):
+def read_and_record(gr, mk, mp, img_path, t_cap, seq, debug_dir=None, camera_frame=False):
     """读一张图，返回一行记录。读数实现由 READER 决定（原工具 / 增强层）。"""
     t0 = time.time()
-    r = READER["mod"].read_one(mk, mp, Path(img_path), debug_dir=debug_dir)
+    options = {'allow_legacy': not camera_frame} if READER['tag'] == '增强层' else {}
+    r = READER["mod"].read_one(mk, mp, Path(img_path), debug_dir=debug_dir, **options)
     cost = time.time() - t0
     if r.get("ok"):
         src = r.get("source")
@@ -523,7 +524,7 @@ def read_and_record_multi(mk, mp, frames, t_cap, seq, name, debug_dir=None):
     这样磁盘上仍然是一次抓拍一张图，主表仍旧一图一行，不产生一堆中间文件。
     """
     t0 = time.time()
-    r = READER["mod"].read_one_multi(mk, mp, frames, debug_dir=debug_dir)
+    r = READER["mod"].read_one_multi(mk, mp, frames, debug_dir=debug_dir, allow_legacy=False)
     cost = time.time() - t0
     brief = ""
     if r.get("ok"):
@@ -890,7 +891,7 @@ def mode_live(rc, gr, mk, mp, args, cfg, uri, debug_dir):
                     live_failed = True
                     live_status("error", "抓拍照片保存失败：%s" % e)
                     break
-                r = read_and_record(gr, mk, mp, path, t_cap, seq, debug_dir)
+                r = read_and_record(gr, mk, mp, path, t_cap, seq, debug_dir, camera_frame=True)
                 jpg = jpgs[0]
             rows.append(r)
             ok_n += 1
